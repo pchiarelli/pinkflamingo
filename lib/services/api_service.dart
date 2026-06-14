@@ -17,7 +17,7 @@ class ApiService {
       : baseUrl = baseUrl ??
             const String.fromEnvironment(
               'API_BASE_URL',
-              defaultValue: 'http://localhost:3333',
+              defaultValue: 'https://pinkflamingo.dyndns.ws',
             );
 
   final String baseUrl;
