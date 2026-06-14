@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pink Flamingo · Admin</title>
+<style>
+  :root {
+    --pink: #ff8fcb; --pink-light: #ffb6dd; --magenta: #ff2d95;
+    --bg: #f7f7f8; --card: #fff; --text: #1c1c1e; --grey: #8a8a8e; --line: #ededed;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, system-ui, Roboto, sans-serif;
+         background: var(--bg); color: var(--text); }
+  button { font: inherit; cursor: pointer; }
+  input, select { font: inherit; }
+  .hidden { display: none !important; }
+
+  /* Header */
+  header { background: linear-gradient(var(--pink-light), var(--pink));
+           color: #fff; padding: 18px 24px; display: flex; align-items: center;
+           justify-content: space-between; }
+  header .brand { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 700; }
+  header .brand span.logo { font-size: 26px; }
+  header button { background: #fff; color: var(--magenta); border: none;
+                  padding: 8px 16px; border-radius: 20px; font-weight: 700; }
+
+  /* Tabs */
+  nav { display: flex; gap: 4px; padding: 0 16px; background: #fff;
+        border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+  nav button { background: none; border: none; padding: 14px 18px; font-weight: 600;
+               color: var(--grey); border-bottom: 3px solid transparent; }
+  nav button.active { color: var(--magenta); border-bottom-color: var(--magenta); }
+
+  main { max-width: 920px; margin: 0 auto; padding: 20px 16px 60px; }
+
+  .toolbar { display: flex; gap: 10px; margin-bottom: 16px; }
+  .toolbar input[type=search] { flex: 1; padding: 12px 14px; border: 1px solid var(--line);
+                                border-radius: 12px; }
+  .btn-primary { background: var(--magenta); color: #fff; border: none;
+                 padding: 12px 18px; border-radius: 12px; font-weight: 700; }
+  .btn-ghost { background: #fff; border: 1px solid var(--line); border-radius: 10px;
+               padding: 8px 12px; }
+  .btn-danger { background: #fff; border: 1px solid #ffd0d0; color: #d12; border-radius: 10px;
+                padding: 8px 12px; }
+
+  .row { display: flex; align-items: center; gap: 14px; background: var(--card);
+         border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
+  .row img, .row .thumb { width: 52px; height: 52px; border-radius: 12px; object-fit: cover;
+                          background: #f1f1f3; display: flex; align-items: center; justify-content: center;
+                          font-size: 22px; flex: 0 0 auto; }
+  .row .info { flex: 1; min-width: 0; }
+  .row .info b { display: block; }
+  .row .info small { color: var(--grey); }
+  .row .price { color: var(--magenta); font-weight: 700; white-space: nowrap; }
+  .row .actions { display: flex; gap: 8px; }
+
+  .muted { color: var(--grey); text-align: center; padding: 40px 0; }
+  .badge { font-size: 12px; background: var(--pink-light); color: #fff; padding: 2px 8px;
+           border-radius: 10px; }
+
+  /* Login */
+  #login { max-width: 360px; margin: 80px auto; background: #fff; border: 1px solid var(--line);
+           border-radius: 18px; padding: 28px; text-align: center; }
+  #login .logo { font-size: 56px; }
+  #login h1 { font-size: 22px; margin: 6px 0 20px; }
+  #login input { width: 100%; padding: 12px 14px; border: 1px solid var(--line);
+                 border-radius: 12px; margin-bottom: 12px; }
+  #login .err { color: #d12; min-height: 18px; font-size: 14px; margin-bottom: 8px; }
+
+  /* Modal */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex;
+             align-items: center; justify-content: center; padding: 16px; z-index: 20; }
+  .modal { background: #fff; border-radius: 18px; padding: 24px; width: 100%; max-width: 440px; }
+  .modal h2 { margin: 0 0 16px; }
+  .modal label { display: block; font-weight: 600; margin: 12px 0 4px; font-size: 14px; }
+  .modal input, .modal select { width: 100%; padding: 11px 13px; border: 1px solid var(--line);
+                                 border-radius: 10px; }
+  .modal .preview { margin-top: 10px; }
+  .modal .preview img { max-height: 120px; border-radius: 10px; }
+  .modal .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+           background: var(--magenta); color: #fff; padding: 12px 20px; border-radius: 12px;
+           opacity: 0; transition: opacity .3s; z-index: 30; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="logo">🦩</div>
+  <h1>Pink Flamingo · Admin</h1>
+  <input id="login-user" placeholder="Usuário" value="admin" />
+  <input id="login-pass" type="password" placeholder="Senha" />
+  <div class="err" id="login-err"></div>
+  <button class="btn-primary" style="width:100%" onclick="doLogin()">Entrar</button>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <header>
+    <div class="brand"><span class="logo">🦩</span> Pink Flamingo</div>
+    <div style="display:flex; gap:8px">
+      <button onclick="openPixForm()" style="background:rgba(255,255,255,.25);color:#fff">Configurar Pix</button>
+      <button onclick="openAccountForm()" style="background:rgba(255,255,255,.25);color:#fff">Conta admin</button>
+      <button onclick="logout()">Sair</button>
+    </div>
+  </header>
+  <nav>
+    <button data-tab="products" class="active" onclick="switchTab('products')">Produtos</button>
+    <button data-tab="kits" onclick="switchTab('kits')">Kits</button>
+    <button data-tab="orders" onclick="switchTab('orders')">Pedidos</button>
+  </nav>
+  <main>
+    <!-- PRODUCTS -->
+    <section id="tab-products">
+      <div class="toolbar">
+        <input type="search" id="prod-search" placeholder="Procurar produto…" oninput="renderProducts()" />
+        <button class="btn-primary" onclick="openProductForm()">+ Novo produto</button>
+      </div>
+      <div id="prod-list"></div>
+    </section>
+    <!-- KITS -->
+    <section id="tab-kits" class="hidden">
+      <div class="toolbar">
+        <input type="search" id="kit-search" placeholder="Procurar kit…" oninput="renderKits()" />
+        <button class="btn-primary" onclick="openKitForm()">+ Novo kit</button>
+      </div>
+      <div id="kit-list"></div>
+    </section>
+    <!-- ORDERS -->
+    <section id="tab-orders" class="hidden">
+      <div id="order-list"></div>
+    </section>
+  </main>
+</div>
+
+<div id="modal-root"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API = ''; // same origin
+let TOKEN = localStorage.getItem('pf_token') || null;
+let CATEGORIES = [], PRODUCTS = [], KITS = [], ORDERS = [];
+
+function authHeaders(extra = {}) {
+  return TOKEN ? { ...extra, Authorization: 'Bearer ' + TOKEN } : extra;
+}
+function fmt(v) {
+  return 'R$' + Number(v || 0).toFixed(2).replace('.', ',');
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"]/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+// Accent-insensitive: "abo" casa com "Abóbora".
+function norm(s) {
+  return String(s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-err');
+  err.textContent = '';
+  try {
+    const res = await fetch(API + '/api/auth/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!res.ok) { err.textContent = 'Usuário ou senha inválidos.'; return; }
+    TOKEN = (await res.json()).token;
+    localStorage.setItem('pf_token', TOKEN);
+    showApp();
+  } catch (e) { err.textContent = 'Erro de conexão com o servidor.'; }
+}
+async function logout() {
+  try {
+    await fetch(API + '/api/auth/logout', { method: 'POST', headers: authHeaders() });
+  } catch (e) {}
+  TOKEN = null; localStorage.removeItem('pf_token');
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('login').classList.remove('hidden');
+}
+
+// Sessão encerrada no servidor (login em outro dispositivo / limite) → 401.
+function handleAuthError(res) {
+  if (res.status === 401 && TOKEN) {
+    TOKEN = null; localStorage.removeItem('pf_token');
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('login').classList.remove('hidden');
+    document.getElementById('login-err').textContent =
+      'Sua sessão foi encerrada (login em outro dispositivo).';
+    return true;
+  }
+  return false;
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('nav button').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === tab));
+  ['products', 'kits', 'orders'].forEach(t =>
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab));
+  if (tab === 'orders') loadOrders();
+}
+
+async function showApp() {
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  await loadCatalog();
+}
+
+async function loadCatalog() {
+  [CATEGORIES, PRODUCTS, KITS] = await Promise.all([
+    fetch(API + '/api/categories').then(r => r.json()),
+    fetch(API + '/api/products').then(r => r.json()),
+    fetch(API + '/api/kits').then(r => r.json()),
+  ]);
+  renderProducts(); renderKits();
+}
+
+// ---- Products -------------------------------------------------------------
+function renderProducts() {
+  const q = norm(document.getElementById('prod-search').value);
+  const list = PRODUCTS.filter(p =>
+    norm(p.name).includes(q) || norm(p.category).includes(q));
+  const el = document.getElementById('prod-list');
+  if (!list.length) { el.innerHTML = '<div class="muted">Nenhum produto.</div>'; return; }
+  el.innerHTML = list.map(p => `
+    <div class="row">
+      ${p.image_url
+        ? `<img src="${esc(p.image_url)}" />`
+        : `<div class="thumb">🎉</div>`}
+      <div class="info">
+        <b>${esc(p.name)}</b>
+        <small>${esc(p.category)}</small>
+      </div>
+      <div class="price">${fmt(p.price)}</div>
+      <div class="actions">
+        <button class="btn-ghost" onclick="openProductForm(${p.id})">Editar</button>
+        <button class="btn-danger" onclick="deleteProduct(${p.id})">Excluir</button>
+      </div>
+    </div>`).join('');
+}
+
+function openProductForm(id) {
+  const p = id ? PRODUCTS.find(x => x.id === id) : null;
+  const opts = CATEGORIES.map(c =>
+    `<option value="${esc(c.name)}" ${p && p.category === c.name ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+  showModal(`
+    <h2>${p ? 'Editar produto' : 'Novo produto'}</h2>
+    <label>Nome</label>
+    <input id="f-name" value="${p ? esc(p.name) : ''}" />
+    <label>Preço (R$)</label>
+    <input id="f-price" type="number" step="0.01" value="${p ? p.price : ''}" />
+    <label>Categoria</label>
+    <select id="f-category">${opts}</select>
+    <label>Foto</label>
+    <input id="f-image" type="file" accept="image/*" onchange="previewImage(event)" />
+    <div class="preview" id="f-preview">${p && p.image_url ? `<img src="${esc(p.image_url)}" />` : ''}</div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveProduct(${p ? p.id : 'null'})">Salvar</button>
+    </div>
+  `);
+}
+function previewImage(e) {
+  const file = e.target.files[0];
+  if (file) document.getElementById('f-preview').innerHTML =
+    `<img src="${URL.createObjectURL(file)}" />`;
+}
+async function saveProduct(id) {
+  const fd = new FormData();
+  fd.append('name', document.getElementById('f-name').value.trim());
+  fd.append('price', document.getElementById('f-price').value || '0');
+  fd.append('category', document.getElementById('f-category').value);
+  const img = document.getElementById('f-image').files[0];
+  if (img) fd.append('image', img);
+  const url = API + '/api/products' + (id ? '/' + id : '');
+  const res = await fetch(url, { method: id ? 'PUT' : 'POST', headers: authHeaders(), body: fd });
+  if (!res.ok) { toast('Erro ao salvar.'); return; }
+  closeModal(); await loadCatalog(); toast('Produto salvo!');
+}
+async function deleteProduct(id) {
+  if (!confirm('Excluir este produto?')) return;
+  const res = await fetch(API + '/api/products/' + id, { method: 'DELETE', headers: authHeaders() });
+  if (res.ok) { PRODUCTS = PRODUCTS.filter(p => p.id !== id); renderProducts(); toast('Excluído.'); }
+}
+
+// ---- Kits -----------------------------------------------------------------
+function renderKits() {
+  const q = norm(document.getElementById('kit-search').value);
+  const list = KITS.filter(k => norm(k.name).includes(q));
+  const el = document.getElementById('kit-list');
+  if (!list.length) { el.innerHTML = '<div class="muted">Nenhum kit.</div>'; return; }
+  el.innerHTML = list.map(k => `
+    <div class="row">
+      ${k.image_url ? `<img src="${esc(k.image_url)}" />` : `<div class="thumb">🎈</div>`}
+      <div class="info"><b>${esc(k.name)}</b></div>
+      <div class="actions">
+        <button class="btn-danger" onclick="deleteKit(${k.id})">Excluir</button>
+      </div>
+    </div>`).join('');
+}
+function openKitForm() {
+  showModal(`
+    <h2>Novo kit</h2>
+    <label>Nome do tema/kit</label>
+    <input id="k-name" />
+    <label>Foto (opcional)</label>
+    <input id="k-image" type="file" accept="image/*" />
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveKit()">Salvar</button>
+    </div>
+  `);
+}
+async function saveKit() {
+  const fd = new FormData();
+  fd.append('name', document.getElementById('k-name').value.trim());
+  const img = document.getElementById('k-image').files[0];
+  if (img) fd.append('image', img);
+  const res = await fetch(API + '/api/kits', { method: 'POST', headers: authHeaders(), body: fd });
+  if (!res.ok) { toast('Erro ao salvar.'); return; }
+  closeModal(); await loadCatalog(); toast('Kit salvo!');
+}
+async function deleteKit(id) {
+  if (!confirm('Excluir este kit?')) return;
+  const res = await fetch(API + '/api/kits/' + id, { method: 'DELETE', headers: authHeaders() });
+  if (res.ok) { KITS = KITS.filter(k => k.id !== id); renderKits(); toast('Excluído.'); }
+}
+
+// ---- Orders ---------------------------------------------------------------
+async function loadOrders() {
+  const res = await fetch(API + '/api/orders', { headers: authHeaders() });
+  if (handleAuthError(res)) return;
+  if (!res.ok) { document.getElementById('order-list').innerHTML =
+    '<div class="muted">Não foi possível carregar os pedidos.</div>'; return; }
+  ORDERS = await res.json();
+  renderOrders();
+}
+function renderOrders() {
+  const el = document.getElementById('order-list');
+  if (!ORDERS.length) { el.innerHTML = '<div class="muted">Nenhum pedido ainda.</div>'; return; }
+  el.innerHTML = ORDERS.map(o => `
+    <div class="row" style="align-items:flex-start">
+      <div class="info">
+        <b>${esc(o.customerName || 'Pedido #' + o.id)}
+          ${o.paid
+            ? '<span class="badge" style="background:#2ecc71">pago</span>'
+            : '<span class="badge" style="background:#e0a800">aguardando pgto</span>'}
+          ${o.done ? '<span class="badge">concluído</span>' : ''}</b>
+        <small>${o.items.map(i => esc(i.quantity + '× ' + i.name)).join(' · ') || 'sem itens'}</small>
+        ${o.eventDate ? `<small><br>Evento: ${esc(o.eventDate)}</small>` : ''}
+      </div>
+      <div class="price">${fmt(o.total)}</div>
+      <div class="actions">
+        <button class="btn-ghost" onclick="setPaid(${o.id}, ${!o.paid})">
+          ${o.paid ? 'Marcar não pago' : 'Marcar pago'}</button>
+        <button class="btn-ghost" onclick="toggleOrder(${o.id}, ${!o.done})">
+          ${o.done ? 'Reabrir' : 'Concluir'}</button>
+        <button class="btn-danger" onclick="deleteOrder(${o.id})">Excluir</button>
+      </div>
+    </div>`).join('');
+}
+async function toggleOrder(id, done) {
+  const res = await fetch(API + '/api/orders/' + id, {
+    method: 'PATCH', headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ done }),
+  });
+  if (res.ok) { loadOrders(); }
+}
+async function setPaid(id, paid) {
+  const res = await fetch(API + '/api/orders/' + id, {
+    method: 'PATCH', headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ paid }),
+  });
+  if (res.ok) { loadOrders(); toast(paid ? 'Marcado como pago.' : 'Marcado como não pago.'); }
+}
+async function deleteOrder(id) {
+  if (!confirm('Excluir este pedido?')) return;
+  const res = await fetch(API + '/api/orders/' + id, { method: 'DELETE', headers: authHeaders() });
+  if (res.ok) { ORDERS = ORDERS.filter(o => o.id !== id); renderOrders(); toast('Excluído.'); }
+}
+
+// ---- Configurar Pix -------------------------------------------------------
+async function openPixForm() {
+  let cfg = { key: '', name: '', city: '' };
+  try {
+    cfg = await fetch(API + '/api/pix-config', { headers: authHeaders() }).then(r => r.json());
+  } catch (e) {}
+  showModal(`
+    <h2>Configurar Pix</h2>
+    <p style="color:#8a8a8e;font-size:14px;margin:0 0 8px">
+      Estes dados montam o código Pix (copia e cola / QR) que aparece pro cliente.</p>
+    <label>Chave Pix</label>
+    <input id="px-key" placeholder="CPF/CNPJ, e-mail, telefone ou aleatória"
+           value="${esc(cfg.key)}" />
+    <label>Nome do recebedor</label>
+    <input id="px-name" value="${esc(cfg.name)}" />
+    <label>Cidade</label>
+    <input id="px-city" value="${esc(cfg.city)}" />
+    <div class="err" id="px-err" style="color:#d12;font-size:14px;min-height:18px;margin-top:6px"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="savePix()">Salvar</button>
+    </div>
+  `);
+}
+async function savePix() {
+  const body = {
+    key: document.getElementById('px-key').value.trim(),
+    name: document.getElementById('px-name').value.trim(),
+    city: document.getElementById('px-city').value.trim(),
+  };
+  if (!body.key) {
+    document.getElementById('px-err').textContent = 'Informe a chave Pix.';
+    return;
+  }
+  const res = await fetch(API + '/api/pix-config', {
+    method: 'PUT', headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) { document.getElementById('px-err').textContent = 'Erro ao salvar.'; return; }
+  closeModal(); toast('Pix configurado!');
+}
+
+// ---- Conta admin (usuário + senha) ----------------------------------------
+async function openAccountForm() {
+  let me = { username: '', maxSessions: 1, activeSessions: 0 };
+  try {
+    me = await fetch(API + '/api/auth/me', { headers: authHeaders() }).then(r => r.json());
+  } catch (e) {}
+  showModal(`
+    <h2>Conta admin</h2>
+    <p style="color:#8a8a8e;font-size:14px;margin:0 0 8px">
+      Existe só uma conta admin. Defina um usuário e senha próprios para que só você acesse.</p>
+    <label>Usuário</label>
+    <input id="ac-user" value="${esc(me.username)}" />
+    <label>Nova senha <span style="color:#8a8a8e;font-weight:400">(deixe em branco para manter)</span></label>
+    <input id="ac-new" type="password" autocomplete="new-password" />
+    <label>Confirmar nova senha</label>
+    <input id="ac-confirm" type="password" autocomplete="new-password" />
+    <hr style="border:none;border-top:1px solid #ededed;margin:16px 0">
+    <label>Máximo de admins logados ao mesmo tempo</label>
+    <input id="ac-max" type="number" min="1" value="${me.maxSessions || 1}" />
+    <small style="color:#8a8a8e">Logins ativos agora: ${me.activeSessions ?? 0}. Ao logar além do limite, o mais antigo é desconectado.</small>
+    <hr style="border:none;border-top:1px solid #ededed;margin:16px 0">
+    <label>Senha atual (para confirmar)</label>
+    <input id="ac-current" type="password" autocomplete="current-password" />
+    <div class="err" id="ac-err" style="color:#d12;font-size:14px;min-height:18px;margin-top:6px"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveAccount()">Salvar</button>
+    </div>
+  `);
+}
+async function saveAccount() {
+  const username = document.getElementById('ac-user').value.trim();
+  const nw = document.getElementById('ac-new').value;
+  const cf = document.getElementById('ac-confirm').value;
+  const cur = document.getElementById('ac-current').value;
+  const max = parseInt(document.getElementById('ac-max').value, 10) || 1;
+  const err = document.getElementById('ac-err');
+  err.textContent = '';
+  if (!username) { err.textContent = 'Informe o usuário.'; return; }
+  if (nw && nw.length < 4) { err.textContent = 'A nova senha deve ter ao menos 4 caracteres.'; return; }
+  if (nw && nw !== cf) { err.textContent = 'As senhas não conferem.'; return; }
+  if (!cur) { err.textContent = 'Informe a senha atual para confirmar.'; return; }
+  const res = await fetch(API + '/api/auth/account', {
+    method: 'PUT', headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ currentPassword: cur, username, newPassword: nw || undefined, maxSessions: max }),
+  });
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    err.textContent = j.error || 'Não foi possível salvar.';
+    return;
+  }
+  closeModal(); toast('Conta atualizada!');
+}
+
+// ---- Modal ----------------------------------------------------------------
+function showModal(html) {
+  document.getElementById('modal-root').innerHTML =
+    `<div class="overlay" onclick="if(event.target===this)closeModal()"><div class="modal">${html}</div></div>`;
+}
+function closeModal() { document.getElementById('modal-root').innerHTML = ''; }
+
+// ---- Boot -----------------------------------------------------------------
+if (TOKEN) showApp().catch(() => logout());
+</script>
+</body>
+</html>
