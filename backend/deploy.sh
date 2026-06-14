@@ -52,7 +52,7 @@ fi
 DB_FILE="$(grep -E '^DB_PATH=' "$ENV_FILE" | cut -d= -f2-)"
 if [ ! -f "$DB_FILE" ]; then
   echo "==> Seed inicial do banco"
-  node --env-file="$ENV_FILE" src/seed.js
+  node --no-warnings --env-file="$ENV_FILE" src/seed.js
 else
   echo "==> Banco já existe — pulando seed (não sobrescreve dados)"
 fi
@@ -63,7 +63,7 @@ if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
   pm2 restart "$APP_NAME" --update-env
 else
   echo "==> pm2 start $APP_NAME"
-  pm2 start "node --env-file=$ENV_FILE src/server.js" --name "$APP_NAME"
+  pm2 start "node --no-warnings --env-file=$ENV_FILE src/server.js" --name "$APP_NAME"
 fi
 pm2 save >/dev/null
 
