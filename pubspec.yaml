@@ -1,7 +1,7 @@
 name: pink_flamingo
 description: App de catálogo, kits e pedidos da Pink Flamingo (decoração de festas).
 publish_to: "none"
-version: 1.0.0+1
+version: 0.0.2+2
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -13,6 +13,8 @@ dependencies:
   provider: ^6.1.2
   intl: ^0.19.0
   http: ^1.2.2
+  http_parser: ^4.0.0
+  mime: ^2.0.0
   image_picker: ^1.1.2
   qr_flutter: ^4.1.0
 

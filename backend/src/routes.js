@@ -35,8 +35,14 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: { fileSize: 8 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) =>
-    cb(null, /image\/(jpe?g|png|webp|gif)/.test(file.mimetype)),
+  fileFilter: (_req, file, cb) => {
+    // Accept by mimetype, but also fall back to the file extension: some
+    // clients send images as application/octet-stream when they don't set
+    // an explicit content type, and we don't want to silently drop those.
+    const okMime = /image\/(jpe?g|png|webp|gif)/.test(file.mimetype);
+    const okExt = /\.(jpe?g|png|webp|gif)$/i.test(file.originalname);
+    cb(null, okMime || okExt);
+  },
 });
 
 function imageUrl(req, filename) {
