@@ -52,7 +52,14 @@ router.post('/auth/login', (req, res) => {
   if (!admin || !bcrypt.compareSync(password || '', admin.password_hash)) {
     return res.status(401).json({ error: 'Usuário ou senha inválidos.' });
   }
-  res.json({ token: startSession(admin), username: admin.username });
+  // Origem do login: campo explícito do cliente, senão deduz pelo User-Agent.
+  // O app Flutter usa o http do Dart (UA "Dart/... (dart:io)"); o painel roda
+  // no navegador. Assim funciona sem precisar recompilar o app.
+  const ua = req.get('user-agent') || '';
+  const client =
+    (req.body && req.body.client) ||
+    (/dart|flutter/i.test(ua) ? 'app' : 'web');
+  res.json({ token: startSession(admin, client), username: admin.username });
 });
 
 router.post('/auth/logout', requireAdmin, (req, res) => {

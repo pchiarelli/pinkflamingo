@@ -284,7 +284,14 @@ async function saveProduct(id) {
   if (img) fd.append('image', img);
   const url = API + '/api/products' + (id ? '/' + id : '');
   const res = await fetch(url, { method: id ? 'PUT' : 'POST', headers: authHeaders(), body: fd });
-  if (!res.ok) { toast('Erro ao salvar.'); return; }
+  if (handleAuthError(res)) return;
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    toast(j.error === 'File too large'
+      ? 'Imagem muito grande (máx. 8 MB).'
+      : (j.error || 'Erro ao salvar.'));
+    return;
+  }
   closeModal(); await loadCatalog(); toast('Produto salvo!');
 }
 async function deleteProduct(id) {
@@ -327,7 +334,14 @@ async function saveKit() {
   const img = document.getElementById('k-image').files[0];
   if (img) fd.append('image', img);
   const res = await fetch(API + '/api/kits', { method: 'POST', headers: authHeaders(), body: fd });
-  if (!res.ok) { toast('Erro ao salvar.'); return; }
+  if (handleAuthError(res)) return;
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    toast(j.error === 'File too large'
+      ? 'Imagem muito grande (máx. 8 MB).'
+      : (j.error || 'Erro ao salvar.'));
+    return;
+  }
   closeModal(); await loadCatalog(); toast('Kit salvo!');
 }
 async function deleteKit(id) {

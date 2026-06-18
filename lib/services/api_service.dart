@@ -124,7 +124,8 @@ class ApiService {
     final res = await http.post(
       _uri('/api/auth/login'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'username': username, 'password': password}),
+      body: jsonEncode(
+          {'username': username, 'password': password, 'client': 'app'}),
     );
     if (res.statusCode != 200) return false;
     _token = (jsonDecode(res.body) as Map<String, dynamic>)['token'] as String;

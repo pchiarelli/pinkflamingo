@@ -9,25 +9,25 @@ export function maxAdminSessions() {
   return Number.isFinite(n) && n > 0 ? n : 1;
 }
 
-/// Create a new admin session (jti), enforce the active-session limit by
-/// dropping the OLDEST sessions, and return a signed token carrying the jti.
-export function startSession(admin, label = null) {
+/// Create a new admin session (jti) and return a signed token carrying it.
+///
+/// Limite de sessões POR TIPO DE CLIENTE (`label`):
+///   • 'app'  → apenas 1 sessão. Um novo login no app derruba o anterior,
+///              garantindo "1 acesso admin no app".
+///   • 'web'  → ilimitado. Vários navegadores/abas ao mesmo tempo, e NUNCA
+///              são derrubados pelo login do app (eram a causa do 401 no site).
+export function startSession(admin, client = 'web') {
+  const label = client === 'app' ? 'app' : 'web';
   const jti = randomUUID();
   db.prepare(
     'INSERT INTO admin_sessions (id, admin_id, label) VALUES (?, ?, ?)',
   ).run(jti, admin.id, label);
 
-  // Keep only the newest `max` sessions for this admin (newest just inserted).
-  const max = maxAdminSessions();
-  const rows = db
-    .prepare('SELECT id FROM admin_sessions WHERE admin_id = ? ORDER BY rowid DESC')
-    .all(admin.id);
-  if (rows.length > max) {
-    const keep = rows.slice(0, max).map((r) => r.id);
-    const placeholders = keep.map(() => '?').join(',');
+  if (label === 'app') {
+    // Mantém só a sessão de app recém-criada; remove sessões de app antigas.
     db.prepare(
-      `DELETE FROM admin_sessions WHERE admin_id = ? AND id NOT IN (${placeholders})`,
-    ).run(admin.id, ...keep);
+      "DELETE FROM admin_sessions WHERE admin_id = ? AND label = 'app' AND id <> ?",
+    ).run(admin.id, jti);
   }
 
   const token = jwt.sign(
