@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
 
 import '../models/category.dart';
 import '../models/kit.dart';
@@ -17,7 +19,7 @@ class ApiService {
       : baseUrl = baseUrl ??
             const String.fromEnvironment(
               'API_BASE_URL',
-              defaultValue: 'http://localhost:3333',
+              defaultValue: 'https://pinkflamingo.dyndns.ws',
             );
 
   final String baseUrl;
@@ -165,7 +167,15 @@ class ApiService {
     req.fields['name'] = name;
     req.fields['price'] = price.toString();
     req.fields['category'] = category;
-    req.files.add(await http.MultipartFile.fromPath('image', imagePath));
+    // Inform the server of the real image type. Without an explicit
+    // contentType, http defaults to application/octet-stream, which the
+    // backend's image fileFilter rejects — silently dropping the photo.
+    final mimeType = lookupMimeType(imagePath) ?? 'image/jpeg';
+    req.files.add(await http.MultipartFile.fromPath(
+      'image',
+      imagePath,
+      contentType: MediaType.parse(mimeType),
+    ));
     final res = await http.Response.fromStream(await req.send());
     _ensureOk(res);
     return Product.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
